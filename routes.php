@@ -1,12 +1,13 @@
 <?php
-
+//Carrega o controller responsavel pelos endpoints de usuarios.
+// Observação: o arquivo no projeto está no singular (UsuarioController.php)
 require_once __DIR__ . '/app/Controllers/UsuarioController.php';
 
 $controller = $_GET['controller'] ?? 'home';
 $action = $_GET['action'] ??'index';
 
 if ($controller === 'usuarios') {
-    $usuariosController = new UsuarioController();
+    $usuariosController = new UsuariosController();
 
     //Escolhe método do Controller executar.
     switch($action){
