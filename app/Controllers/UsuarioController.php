@@ -22,7 +22,7 @@ class UsuariosController
         //consulta todos os usuarios em ordenação descresente por ID.
         $sql = 'SELECT id, nome, email, perfil, status, criado_em
                 FROM usuarios
-                ORDER BY id DESC':
+                ORDER BY id DESC';
         
         $stmt = $this->pdo->query($sql);
         $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -36,9 +36,9 @@ class UsuariosController
         //Lê a valida o ID recebido por GET.
         $id = filer_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
-        if (!$sid){
+        if (!$id) {
             http_response_coe(400);
-            echo json_encode(['erro'+> 'ID inválido.']);
+            echo json_encode(['erro' => 'ID inválido.']);
             return;
         }
         //Consulta parametizada evita SQL Injection.
@@ -167,8 +167,8 @@ class UsuariosController
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
 
-            echo json_encode(['mensagem' => 'Usuário atualizado com sucesso.'], JSON_UNESCAPED_UNICODE)
-        } catch (PDOException $e){
+            echo json_encode(['mensagem' => 'Usuário atualizado com sucesso.'], JSON_UNESCAPED_UNICODE);
+        } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(['erro' => 'Erro ao atualizar usuário.']);
         }
