@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Tempo de geração: 10/06/2026 às 03:08
+-- Tempo de geração: 03/06/2026 às 02:44
 -- Versão do servidor: 10.4.32-MariaDB
 -- Versão do PHP: 8.2.12
 
@@ -24,17 +24,25 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Estrutura para tabela `atendimentos`
+-- Estrutura para tabela `usuarios`
 --
 
-CREATE TABLE `atendimentos` (
+CREATE TABLE `usuarios` (
   `id` int(11) NOT NULL,
-  `usuario_id` int(11) NOT NULL,
-  `pessoa_id` int(11) NOT NULL,
-  `tipo_atendimento_id` int(11) NOT NULL,
-  `data_atendimento` timestamp NOT NULL DEFAULT current_timestamp(),
-  `observacoes` text DEFAULT NULL
+  `nome` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `senha` varchar(255) NOT NULL,
+  `perfil` enum('admin','aluno','atendente') DEFAULT 'atendente',
+  `status` enum('ativo','inativo') DEFAULT 'ativo',
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Despejando dados para a tabela `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `nome`, `email`, `senha`, `perfil`, `status`, `criado_em`) VALUES
+(1, 'Administrador', 'gustavo@atendelab.com', 'root', 'admin', 'ativo', '2026-06-03 00:09:25');
 
 -- --------------------------------------------------------
 
@@ -45,8 +53,11 @@ CREATE TABLE `atendimentos` (
 CREATE TABLE `pessoas` (
   `id` int(11) NOT NULL,
   `nome` varchar(100) NOT NULL,
-  `documento` varchar(20) DEFAULT NULL,
-  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
+  `cpf` varchar(14) NOT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `tipo` enum('aluno','professor','servidor') DEFAULT 'aluno',
+  `status` enum('ativo','inativo') DEFAULT 'ativo',
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -57,57 +68,30 @@ CREATE TABLE `pessoas` (
 
 CREATE TABLE `tipos_atendimentos` (
   `id` int(11) NOT NULL,
-  `descricao` varchar(100) NOT NULL
+  `nome` varchar(100) NOT NULL,
+  `descricao` text DEFAULT NULL,
+  `status` enum('ativo','inativo') DEFAULT 'ativo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Estrutura para tabela `usuarios`
+-- Estrutura para tabela `atendimentos`
 --
 
-CREATE TABLE `usuarios` (
+CREATE TABLE `atendimentos` (
   `id` int(11) NOT NULL,
-  `nome` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `senha` varchar(255) NOT NULL,
-  `perfil` enum('admin','atendente') DEFAULT 'atendente',
-  `status` enum('ativo','inativo') DEFAULT 'ativo',
-  `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
+  `pessoa_id` int(11) NOT NULL,
+  `tipo_atendimento_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `descricao` text NOT NULL,
+  `status` enum('pendente','em_andamento','concluido','cancelado') DEFAULT 'pendente',
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Despejando dados para a tabela `usuarios`
---
-
-INSERT INTO `usuarios` (`id`, `nome`, `email`, `senha`, `perfil`, `status`, `criado_em`) VALUES
-(3, 'Administrador', 'admin@atendelab.com', '2444666668888888', 'admin', 'ativo', '2026-06-02 00:34:56');
 
 --
 -- Índices para tabelas despejadas
 --
-
---
--- Índices de tabela `atendimentos`
---
-ALTER TABLE `atendimentos`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_atendimento_usuario` (`usuario_id`),
-  ADD KEY `fk_atendimento_pessoa` (`pessoa_id`),
-  ADD KEY `fk_atendimento_tipo` (`tipo_atendimento_id`);
-
---
--- Índices de tabela `pessoas`
---
-ALTER TABLE `pessoas`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `documento` (`documento`);
-
---
--- Índices de tabela `tipos_atendimentos`
---
-ALTER TABLE `tipos_atendimentos`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Índices de tabela `usuarios`
@@ -117,14 +101,36 @@ ALTER TABLE `usuarios`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Índices de tabela `pessoas`
+--
+ALTER TABLE `pessoas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `cpf` (`cpf`);
+
+--
+-- Índices de tabela `tipos_atendimentos`
+--
+ALTER TABLE `tipos_atendimentos`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Índices de tabela `atendimentos`
+--
+ALTER TABLE `atendimentos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_atend_pessoa` (`pessoa_id`),
+  ADD KEY `fk_atend_tipo` (`tipo_atendimento_id`),
+  ADD KEY `fk_atend_usuario` (`usuario_id`);
+
+--
 -- AUTO_INCREMENT para tabelas despejadas
 --
 
 --
--- AUTO_INCREMENT de tabela `atendimentos`
+-- AUTO_INCREMENT de tabela `usuarios`
 --
-ALTER TABLE `atendimentos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de tabela `pessoas`
@@ -139,10 +145,10 @@ ALTER TABLE `tipos_atendimentos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de tabela `usuarios`
+-- AUTO_INCREMENT de tabela `atendimentos`
 --
-ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `atendimentos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restrições para tabelas despejadas
@@ -152,9 +158,10 @@ ALTER TABLE `usuarios`
 -- Restrições para tabelas `atendimentos`
 --
 ALTER TABLE `atendimentos`
-  ADD CONSTRAINT `fk_atendimento_pessoa` FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_atendimento_tipo` FOREIGN KEY (`tipo_atendimento_id`) REFERENCES `tipos_atendimentos` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_atendimento_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_atend_pessoa` FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas` (`id`),
+  ADD CONSTRAINT `fk_atend_tipo` FOREIGN KEY (`tipo_atendimento_id`) REFERENCES `tipos_atendimentos` (`id`),
+  ADD CONSTRAINT `fk_atend_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
