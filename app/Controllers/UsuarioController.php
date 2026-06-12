@@ -1,126 +1,194 @@
 <?php
 
-class TiposAtendimentosController 
+class UsuarioController
 {
     private PDO $pdo;
-
     public function __construct()
     {
         require __DIR__ . '/../../config/database.php';
         $this->pdo = $pdo;
     }
-
-    public function listar(): void
+    public function listar() :void
     {
-        header("Content-Type: application/json; charset=utf-8");
-        $sql = 'SELECT * FROM tipos_atendimentos ORDER BY id DESC';
+        header('Content-Type: application/json; charset=utf-8');
+        $sql = 'SELECT id, nome, email, perfil, status, criado_em
+                FROM usuarios
+                ORDER BY id DESC';
+       
         $stmt = $this->pdo->query($sql);
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $usuarios = $stmt->fetchALL(PDO::FETCH_ASSOC);
+        echo json_encode($usuarios,JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     public function buscarPorId(): void
     {
         header('Content-Type: application/json; charset=utf-8');
-        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-        
-        if (!$id) {
+        $id = filter_input(INPUT_GET,'id', FILTER_VALIDATE_INT);
+
+        if(!$id){
             http_response_code(400);
-            echo json_encode(['erro' => 'ID inválido.']);
+            echo json_encode(['erro'=> 'ID inválido']);
             return;
         }
 
-        $sql = 'SELECT * FROM tipos_atendimentos WHERE id = :id';
+        $sql = 'SELECT id, nome, email, perfil, status, criado_em
+                FROM usuarios
+                WHERE id =:id';
+       
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue('id',$id, PDO::PARAM_INT);
         $stmt->execute();
-        $tipo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$tipo) {
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if(!$usuario){
             http_response_code(404);
-            echo json_encode(['erro' => 'Tipo de atendimento não encontrado.']);
+            echo json_encode(['erro'=> 'Usuário não encontrado.']);
             return;
         }
-        echo json_encode($tipo, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    }
+        echo json_encode($usuario, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-    public function criar(): void
+       
+    }
+    public function criar():void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Type:application/json; charset=utf-8');
+
         $nome = trim($_POST['nome'] ?? '');
-        $descricao = trim($_POST['descricao'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $senha = $_POST['senha'] ?? '';
+        $perfil = $_POST['perfil'] ?? 'atendente';
         $status = $_POST['status'] ?? 'ativo';
 
-        if ($nome === '') {
+
+        if($nome ===''|| $email ===''|| $senha ==='') {
             http_response_code(400);
-            echo json_encode(['erro' => 'O nome é obrigatório.']);
+            echo json_encode(['erro'=> 'Nome, e-mail e senha são obrigatórios']);
             return;
         }
 
-        try {
-            $sql = 'INSERT INTO tipos_atendimentos (nome, descricao, status) VALUES (:nome, :descricao, :status)';
+        if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+            http_response_code(400);
+            echo json_encode(['erro'=>'E-mail inválido']);
+            return;
+        }
+
+        if (!in_array($perfil, ['admin','atendente','aluno'],true)){
+            http_response_code(400);
+            echo json_encode(['erro'=>'Perfil inválido']);
+            return;
+        }
+
+        if (!in_array($status, ['ativo','inativo'], true)){
+            http_response_code(400);
+            echo json_encode(['erro'=> 'Status inválido']);
+            return;
+        }
+
+
+        $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+
+        try
+        {
+            $sql = 'INSERT INTO usuarios (nome,email,senha,perfil,status)
+                    VALUES (:nome, :email, :senha, :perfil, :status)';
+               
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':nome', $nome);
-            $stmt->bindValue(':descricao', $descricao);
-            $stmt->bindValue(':status', $status);
+            $stmt->bindValue(':nome',$nome);
+            $stmt->bindValue(':email',$email);
+            $stmt->bindValue(':senha',$senhaHash);
+            $stmt->bindValue(':perfil',$perfil);
+            $stmt->bindValue(':status',$status);
             $stmt->execute();
 
             http_response_code(201);
-            echo json_encode(['mensagem' => 'Tipo cadastrado com sucesso.', 'id' => $this->pdo->lastInsertId()], JSON_UNESCAPED_UNICODE);
+            echo json_encode([
+            'mensagem' => 'Usuário cadastro com sucesso.',
+            'id' => $this->pdo->lastInsertId()
+            ], JSON_UNESCAPED_UNICODE);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro ao cadastrar.']);
+            echo json_encode(['erro'=> 'Erro ao cadastrar usuário']);
         }
     }
 
     public function atualizar(): void
     {
         header('Content-Type: application/json; charset=utf-8');
+
         $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
-        $descricao = trim($_POST['descricao'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $perfil = $_POST['perfil'] ?? 'atendente';
         $status = $_POST['status'] ?? 'ativo';
 
-        if (!$id || $nome === '') {
+        if (!$id || $nome === '' || $email === ''){
             http_response_code(400);
-            echo json_encode(['erro' => 'ID e nome são obrigatórios.']);
+            echo json_encode(['erro'=>'ID, nome e e-mail são obrigatórios']);
+            return;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)){
+            http_response_code(400);
+            echo json_encode(['erro'=>'E-mail inválido']);
+            return;
+        }
+
+        if(!in_array($perfil, ['admin','atendente','aluno'], true)){
+            http_response_code(400);
+            echo json_encode(['erro'=>'Perfil inválido']);
+            return;
+        }
+
+        if(!in_array($status, ['ativo','inativo'],true)){
+            http_response_code(400);
+            echo json_encode(['erro'=>'Status inválido']);
             return;
         }
 
         try {
-            $sql = 'UPDATE tipos_atendimentos SET nome = :nome, descricao = :descricao, status = :status WHERE id = :id';
+            $sql = 'UPDATE usuarios SET nome = :nome,
+                                        email = :email,
+                                        perfil = :perfil,
+                                        status = :status
+                                    WHERE id =: id';
+
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':nome', $nome);
-            $stmt->bindValue(':descricao', $descricao);
-            $stmt->bindValue(':status', $status);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->bindValue(':nome',$nome);
+            $stmt->bindValue(':email',$email);
+            $stmt->bindValue(':perfil',$perfil);
+            $stmt->bindValue(':status',$status);
+            $stmt->bindValue(':id',$id, PDO::PARAM_INT);
             $stmt->execute();
-            echo json_encode(['mensagem' => 'Atualizado com sucesso.'], JSON_UNESCAPED_UNICODE);
-        } catch (PDOException $e) {
+
+            echo json_encode(['mensagem'=> 'Usuário atualizado com sucesso.'],JSON_UNESCAPED_UNICODE);
+        } catch(PDOException $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro ao atualizar.']);
+            echo json_encode(['erro'=>'Erro ao atualizar usuário.']);
         }
     }
 
     public function excluir(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Type: applications/json; charset=utf-8');
+
         $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-        
-        if (!$id) {
+
+        if(!$id) {
             http_response_code(400);
-            echo json_encode(['erro' => 'ID inválido.']);
+            echo json_encode(['erro'=> 'ID inválido']);
             return;
         }
-
         try {
-            $sql = 'DELETE FROM tipos_atendimentos WHERE id = :id';
+            $sql = 'DELETE FROM usuarios WHERE id = :id';
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            echo json_encode(['mensagem' => 'Excluído com sucesso.'], JSON_UNESCAPED_UNICODE);
+
+            echo json_encode(['mensagem'=>'Usuário excluído com sucesso;'],JSON_UNESCAPED_UNICODE);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['erro' => 'Erro ao excluir (Pode estar em uso).']);
+            echo json_encode(['erro'=>'Erro ao excluir usuário1']);
         }
     }
-}
+
+    }
